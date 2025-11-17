@@ -52,13 +52,14 @@ Unité d'observation : IDPN
 psid_ind_2000_2019_long <- long_panel(
   data = psid_ind_2000_2019_wide,       
   id = "IDPN",       
-  wave = "annee",        
+  wave = "year",        
   begin = 2001,          
-  end = 2019,            
-  label_location = "end" 
-)
+  end = 2019,
+  periods = c("2001", "2005", "2007", "2009", "2011", "2013", "2015", "2017", "2019"),
+  label_location = "end",
+  prefix = "_YEAR"
+) 
 ```
-
 On a maintenant 10 variables et 190950 observations 
 
 # Question 5 
@@ -66,4 +67,36 @@ On a maintenant 10 variables et 190950 observations
 ```{r}
 psid_ind_1979_2019 <- rbind.fill(psid_ind_1979_1999, psid_ind_2000_2019_long)
 ```
+On a maintenant 10 variables et 213687 observations. 
+
+# Question 6
+
+```{r}
+psid <- merge(PSID_fam_long_commoninfo, psid_ind_1979_2019, 
+              by = c("ID68", "intnum", "year"), 
+              all.y = TRUE)
+```
+Nombre d'observations: 213687 identique à la table précédente (c'est ce que l'on voulait)
+Nombre de variables : 12, logique car on rajoute les variables de la tables PSID_fam_long_commoninfo
+
+# Question 7 
+
+```{r}
+psid_panel <- pdata.frame(psid, index = c("IDPN", "year"), drop.index = TRUE, row.names = TRUE)
+pdim(psid_panel)
+```
+On a un panel non-cylindré de 25052 individus et 28 périodes de temps. 
+
+# Question 9 : Données manquantes
+
+```{r}
+psid_panel %>% 
+  ggplot(aes(x = age, y = workhours)) + 
+  geom_point() + 
+  labs(title = "Distribution des horaires de travail par rapport à l'âge",
+       x = "Age",
+       y = "Horaires travaillées")
+```
+
+
 
