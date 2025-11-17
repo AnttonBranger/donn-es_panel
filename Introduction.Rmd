@@ -1,0 +1,69 @@
+---
+title: "Introduction aux données de panel"
+author: "Branger Antton"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Chargement des packages
+```{r}
+library(panelr)
+library(dplyr)
+library(plm)
+library(ggplot2)
+library(plyr)
+library(haven)
+```
+
+# Question 2
+
+Importation des données
+```{r}
+PSID_fam_long_commoninfo <- read_dta("PSID_fam_long_commoninfo.dta")
+psid_ind_1979_1999 <- read_dta("psid_ind_1979_1999.dta")
+psid_ind_2000_2019_wide <- read_dta("psid_ind_2000_2019_wide.dta")
+psid_ind_2000_2019_long_reel <- read_dta("psid_ind_2000_2019_long.dta")
+```
+
+# Question 3
+
+1. PSID_fam_long_commoninfo :
+Nombre de variables : 5
+Nombre d'observations : 267488
+Unité d'observation : ID68 et intnum
+
+2. psid_ind_1979_1999 :
+Nombre de variables : 10
+Nombre d'observations : 123237
+Unité d'observation : IDPN
+
+3. psid_ind_2000_2019_wide :
+Nombre de variables : 49
+Nombre d'observations : 10050
+Unité d'observation : IDPN
+
+# Question 4
+
+```{r}
+psid_ind_2000_2019_long <- long_panel(
+  data = psid_ind_2000_2019_wide,       
+  id = "IDPN",       
+  wave = "annee",        
+  begin = 2001,          
+  end = 2019,            
+  label_location = "end" 
+)
+```
+
+On a maintenant 10 variables et 190950 observations 
+
+# Question 5 
+
+```{r}
+psid_ind_1979_2019 <- rbind.fill(psid_ind_1979_1999, psid_ind_2000_2019_long)
+```
+
