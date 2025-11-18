@@ -227,6 +227,36 @@ coeftest(reg2_re, method = "arellano")
 # Question 13
 
 ```{r}
-phtest(reg_within, reg_re)
+phtest(reg_re, reg_within)
 ```
-On rejette l'hypothèse nulle donc on garde le modèle à effets fixes. On accepte que 
+On rejette l'hypothèse nulle donc on garde le modèle à effets fixes. On accepte que l'hétérogénéité inobservée soit corrélée avec la variable ln_labor_inc. 
+
+# Question 14
+
+a) 
+```{r}
+my_model2 <- my_model <- ln_workhours ~ ln_labor_inc + education + age
+```
+
+Effets fixe avec contrôle
+```{r}
+reg3_within <- plm(formula = my_model2, data = panel_final, model = "within", effect = "individual")
+```
+
+Effets aléatoires avec contrôle
+```{r}
+reg3_re <- plm(formula = my_model2, data = panel_final, model = "random")
+```
+
+b) 
+```{r}
+screenreg(list(reg_within, reg3_within, reg_re, reg3_re), 
+          custom.model.names = c("Within", "Within (controle)", "RE", "RE (controle)"))
+```
+On a une augmentation des coefficients pour les deux modèles avec les contrôle. 
+
+c) Test de Haussman
+```{r}
+phtest(reg3_re, reg3_within)
+```
+On rejette encore l'hypothèse nulle. On sélectionne donc le modèle à effets fixes. 
