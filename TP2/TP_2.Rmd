@@ -17,6 +17,8 @@ library(plm)
 library(ggplot2)
 library(plyr)
 library(haven)
+library(texreg)
+library(lmtest)
 ```
 
 # Question 2 
@@ -76,7 +78,7 @@ summary(panel_final$ln_workhours)
 
 # Question 7 
 
-Variance
+Variance total
 ```{r}
 var(panel_final$ln_workhours)
 var(panel_final$ln_labor_inc)
@@ -94,7 +96,7 @@ var(Within(panel_final$ln_workhours))
 var(Within(panel_final$ln_labor_inc))
 ```
 
-La variable ln_workhours a une variance between et within similaire c'est à dire que la variation temporelle et entreprise les individus est équivalente. 
+La variable ln_workhours a une variance between et within similaire c'est à dire que la variation temporelle pour un individu et entreprise les individus est équivalente. 
 La variable ln_labor_inc a une variance between plus importante que la variance within c'est à dire que la variation entre les individual est plus importante que la variable temporelle. 
 
 # Question 8 
@@ -110,7 +112,121 @@ summary(reg_OLS)
 ```
 
 ```{r}
-reg_OLS2 <- plm(formula = my_model, data = panel_final)
+reg_OLS2 <- plm(formula = my_model, data = panel_final, model = "pooling")
 summary(reg_OLS2)
 ```
+On a eux fois le même modèle ce qui est logique. 
 
+b) Between estimator
+```{r}
+reg_between <- plm(formula = my_model, data = panel_final, model = "between")
+summary(reg_between)
+```
+
+c) Within estimator
+```{r}
+reg_within <- plm(formula = my_model, data = panel_final, model = "within", effect = "individual")
+summary(reg_within)
+```
+
+d) First differences estimator
+```{r}
+reg_1st_diff <- plm(formula = my_model, data = panel_final, model = "fd")
+summary(reg_1st_diff)
+```
+
+e) Random effects estimator
+```{r}
+reg_re <- plm(formula = my_model, data = panel_final, model = "random")
+summary(reg_re)
+```
+
+# Question 9 
+
+
+```{r}
+screenreg(list(reg_OLS2, reg_between, reg_within, reg_1st_diff, reg_re), 
+          custom.model.names = c("Pooled", "Between", "Within", "1st diff", "RE"))
+```
+
+L'estimateur à effet aléatoire entre between et estimateur à effet fixe. 
+Interprétation 0.28 : Une augmentation de 1% du revenu du travail va impliquer une augmentation de 0.28% des horaires de travail. 
+Il est possible que les estimateurs within et 1st diff soient sur-estimés.
+
+# Question 10
+
+a) On ajoute des variables de contrôle pour avoir des chocs exogènes sur les variables ln_labor_inc et ln_workours. 
+
+b) 
+
+Effet fixes 
+```{r}
+reg2_within <- plm(formula = my_model, data = panel_final, model = "within", effect = "twoways")
+summary(reg2_within)
+```
+
+Random effect
+```{r}
+reg2_re <- plm(formula = my_model, data = panel_final, model = "random", effect = "twoways")
+summary(reg2_re)
+```
+
+```{r}
+screenreg(list(reg_OLS2, reg_between, reg_within, reg2_within, reg_1st_diff, reg_re, reg2_re), 
+          custom.model.names = c("Pooled", "Between", "Within", "Within (controle)", "1st diff", "RE", "RE (controle)"))
+```
+
+On voit que les coefficients estimer ont augmenter pour les deux modèles en ajoutant des variables de contrôle. 
+
+# Question 11 
+
+Test de Breush Pagan
+```{r}
+bptest(my_model, data = panel_final, studentize = TRUE)
+```
+Il y a de l'hétéroscedasticité. Il faut donc la corriger. 
+
+# Question 12
+
+a) Correction de l'hétéroscédasticité générale
+
+Effet fixe 
+```{r}
+coeftest(reg2_within, vcovHC)
+```
+
+Effet aléatoires 
+```{r}
+coeftest(reg2_re, vcovHC)
+```
+
+b) Correction de l'hétéroscédasticité générale et des groupes
+
+Effet fixe 
+```{r}
+coeftest(reg2_within, method = "white2")
+```
+
+Effet aléatoires 
+```{r}
+coeftest(reg2_re, method = "white2")
+```
+
+c) Correction de l'autocorrélation
+
+Effet fixe 
+```{r}
+coeftest(reg2_within, method = "arellano")
+```
+
+Effet aléatoires 
+```{r}
+coeftest(reg2_re, method = "arellano")
+```
+
+# Question 13
+
+```{r}
+phtest(reg_within, reg_re)
+```
+On rejette l'hypothèse nulle donc on garde le modèle à effets fixes. On accepte que 
