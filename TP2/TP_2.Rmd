@@ -229,13 +229,15 @@ coeftest(reg2_re, method = "arellano")
 ```{r}
 phtest(reg_re, reg_within)
 ```
-On rejette l'hypothèse nulle donc on garde le modèle à effets fixes. On accepte que l'hétérogénéité inobservée soit corrélée avec la variable ln_labor_inc. 
+H0 : beta_FE = beta_RE   vs    H1 : beta_FE != beta_RE
+Si beta_FE = beta_RE on choisit le modèle à effets aléatoire car les deux estimateurs sont consistents mais l'estimateur beta_RE est efficace. Sinon l'estimateur beta_RE n'est pas consistent donc on privilégie beta_FE.
+On rejette l'hypothèse nulle donc on garde le modèle à effets fixes. On considère que le modèle aléatoire est biaisé. 
 
 # Question 14
 
 a) 
 ```{r}
-my_model2 <- my_model <- ln_workhours ~ ln_labor_inc + education + age
+my_model2 <- my_model <- ln_workhours ~ ln_labor_inc + educ + age
 ```
 
 Effets fixe avec contrôle
