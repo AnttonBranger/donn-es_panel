@@ -1,0 +1,29 @@
+---
+title: "TP3"
+author: "Branger Antton"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Chargement des packages
+```{r}
+library(panelr)
+library(dplyr)
+library(plm)
+library(ggplot2)
+library(plyr)
+library(haven)
+library(texreg)
+library(lmtest)
+```
+
+# Question 2 
+
+Importation des données
+```{r}
+psid_ind_1979_1999 <- read_dta("psid_ind_1979_1999.dta")
+```
