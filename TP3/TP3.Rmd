@@ -25,5 +25,119 @@ library(lmtest)
 
 Importation des données
 ```{r}
-psid_ind_1979_1999 <- read_dta("psid_ind_1979_1999.dta")
+GMM <- read_dta("GMMdata.dta")
 ```
+
+# Question 3 
+
+Nombre de variable : 22
+Nombre d'observation : 1031
+Unité d'observation : Entreprise (id)
+
+# Question 4 
+
+```{r}
+panel_GMM <- pdata.frame(GMM, index = c("id", "year"), drop.index = T, row.names = TRUE)
+pdim(panel_GMM)
+```
+140 entreprise qu'on observe entre 7 et 9 années. On a un panel non-cylindré. 
+
+# Question 5 
+
+```{r}
+model <- n ~ nL1 + nL2 + w + wL1 + k + kL1 + ys + ysL1 + ysL2 + yr1976 + yr1977 + yr1978 + yr1979 + yr1980 + yr1981 +
+    yr1982 + yr1983 + yr1984 
+```
+
+Modèle pooled 
+```{r}
+pooled <- plm(formula = model, data = panel_GMM, model = "pooling")
+summary(pooled)
+```
+Lorsque l'emploi augmente de 1% en t-1 alors l'emploi augmentera de 1.1 % en t.
+L'estimation est biaisée car les variables lag sont corrélées avec le terme d'erreur. 
+
+# Question 6 
+
+```{r}
+within <- plm(formula = model, data = panel_GMM, model = "within")
+summary(within)
+```
+Lorsque l'emploi augmente de 1% en t-1 alors l'emploi augmentera de 0.73 % en t. 
+
+Il y a un problème de corrélation entre le lag de la variable de l'emploi et le lag du terme d'erreur. L'estimateur within est donc toujours biaisé. 
+
+# Question 7 
+
+On introduit les différence dans le panel
+```{r}
+GMM <- GMM %>%
+  arrange(id, year) %>%
+  group_by(id) %>%
+  mutate(
+    dn   = n   - dplyr::lag(n),
+    dnL1 = nL1 - dplyr::lag(nL1),
+    dnL2 = nL2 - dplyr::lag(nL2),
+    dw   = w   - dplyr::lag(w),
+    dwL1 = wL1 - dplyr::lag(wL1),
+    dk   = k   - dplyr::lag(k),
+    dkL1 = kL1 - dplyr::lag(kL1),
+    dys  = ys  - dplyr::lag(ys),
+    dysL1 = ysL1 - dplyr::lag(ysL1),
+    dysL2 = ysL2 - dplyr::lag(ysL2)
+  ) %>%
+  ungroup()
+panel_GMM_diff <- pdata.frame(GMM, index = c("id", "year"), drop.index = T, row.names = TRUE)
+```
+
+Modèle 
+```{r}
+fd <- lm(dn ~ dnL1 + dnL2 + dw + dwL1 + dk + dkL1 + dys + dysL1 + dysL2, data = panel_GMM_diff)
+summary(fd)
+```
+Lorsque l'emploi augmente de 1 % entre l'année t-2 et t-1 alors l'emploi augmentera de 0.12 % entre t-1 et t. 
+Le problème est que le lag de la variable n et le lag du terme d'erreur sont corrélé, ce qui entraîne un problème d'endogénéité et donc un biais. 
+
+# Question 8 
+
+```{r}
+anderson_hsiao <- plm(dn ~ dnL1 + dw + dk + dys | 
+                        nL2 + dw + dk + dys,
+                      data = panel_GMM_diff, model = "pooling")
+summary(anderson_hsiao)
+```
+Si la corissance salariale augmente de 1 % alors la croissance de l'emploi diminuera de 0.61 %. 
+L’estimateur Anderson-Hsiao combine la première différence pour éliminer les effets fixes et une méthode IV utilisant la valeur en t-2 de la variable emploi comme instrument du terme retardé différencié. Cela permet de traiter l’endogénéité du lag de la variable dépendante et d’obtenir des coefficients consistants. 
+
+# Question 9 
+
+a) One-step
+```{r}
+AB_one <- pgmm(n ~ plm::lag(n, 1) + w + k + ys | plm::lag(n, 2:2) + w + k + ys , 
+               data = panel_GMM, effect = "individual", model = "onestep")
+summary(AB_one)
+```
+Lorsque l'emploi augmente de 1 % en t-1 alors l'emploi augmentera de 0.62 % en t. 
+
+Il n'y a pas d'autocorrélation de second ordre ce qui prouve que notre instrument est bon, en revanche on a un peu d'aotocorrélation du premier ordre ce qui était attendu. 
+On ne rejette pas l'hypothèse nulle du test de Sagan donc les instruments du modèles sont globalement bon.  
+
+b) Two-step
+```{r}
+AB_txo <- pgmm(n ~ plm::lag(n, 1) + w + k + ys | plm::lag(n, 2:2) + w + k + ys , 
+               data = panel_GMM, effect = "individual", model = "twostep")
+summary(AB_one)
+```
+On trouve les mêmes résultats qu'avec le one step. 
+
+# Question 10
+
+```{r}
+GMM <- pgmm(n ~ plm::lag(n, 1) + w + k + ys | plm::lag(n, 2:2) + w + k + ys,
+            data = panel_GMM, effect = "twoway",  model = "onestep")
+summary(GMM)
+```
+Lorsque l'emploi augmente de 1 % en t-1 alors l'emploi augmentera de 0.51 % en t. 
+
+Il n'y a pas d'autocorrélation de second ordre ce qui prouve que notre instrument est bon, en revanche on a un peu d'aotocorrélation du premier ordre ce qui était attendu. 
+On ne rejette pas l'hypothèse nulle du test de Sagan donc les instruments du modèles sont globalement bon.
