@@ -1,0 +1,108 @@
+---
+title: "TP4"
+author: "Branger Antton"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Chargement des packages
+```{r}
+library(tidyverse)
+library(plm)
+library(texreg)
+library(lme4)
+library(haven)
+```
+
+# Question 2 
+
+```{r}
+psid_ind_1979_1999 <- read_dta("PBSET4_mixed_psid_ind_1979_1999.dta")
+```
+
+# Question 3
+
+Il y a 61619 observations, 10 variables et l'unité d'observation est la variable IDPN et chacun appartiennent à une famille (ID68)
+
+# Question 4 
+
+```{r}
+psid_ind_1979_1999 <- psid_ind_1979_1999 %>% 
+  mutate(ln_labor_inc = log(labor_inc),
+         age = year - byear,
+         age_2 = age**2)
+summary(psid_ind_1979_1999$ln_labor_inc)
+summary(psid_ind_1979_1999$age)
+summary(psid_ind_1979_1999$age_2)
+```
+
+# Question 5
+
+```{r}
+panel <- pdata.frame(psid_ind_1979_1999, index = c("IDPN", "year"), 
+                     drop.index = TRUE, row.names = TRUE)
+pdim(panel)
+```
+
+# Question 6 
+
+a) Modèle à effets aléatoires
+```{r}
+re <- plm(formula = ln_labor_inc ~ age + age_2 + sex + byear, data = panel, model = "random")
+screenreg(list(re), digits = 2, custom.model.names = "RE")
+```
+
+b) Interprétation des coefficients
+Lorque l'âge augmente d'une année, le salaire augmente en moyenne de 0.18 %.  
+Lorsqu'on est une femme le salaire diminue en moyenne de 0.77 % par rapport à un homme. 
+Lorsque l'on vieillit, l'effet de l'âge devient de moins en moins important sur l'augmentation du salaire. 
+
+# Question 7 
+
+Modèle sans pente aléatoire
+```{r}
+mod_mixe1 <- lmer(ln_labor_inc ~ age + age_2 + sex + byear + (1 | IDPN), data = psid_ind_1979_1999)
+screenreg(list(mod_mixe1, re), digits = 2, custom.model.names = c("Mixed model with random slope", "RE"))
+```
+On retrouve les mêmes coefficients qu'avec le modèle à effets aléatoire
+56 % de la variance du log du revenu est expliqué par des effets individuels
+
+# Question 8 
+
+```{r}
+mod_mixe2 <- lmer(ln_labor_inc ~ age + age_2 + sex + byear + (1 | state_residence), data = psid_ind_1979_1999)
+screenreg(list(mod_mixe2, mod_mixe1), digits = 2, 
+          custom.model.names = c("Mixed model without random slope", "Mixed model with random slope"))
+```
+L'état de résidence joue très peu dans les inégalité de revenu. 
+
+# Question 9 
+
+```{r}
+mod_mixe3 <- lmer(ln_labor_inc ~ age + age_2 + sex + byear + (1 + sex | state_residence), data = psid_ind_1979_1999)
+screenreg(list(mod_mixe2, mod_mixe3), digits = 2, 
+          custom.model.names = c("Mixed 2", "Mixed 3"))
+```
+
+# Question 10
+
+```{r}
+multi_level <- lmer(ln_labor_inc ~ age + age_2 + sex + byear + (1|IDPN) +(1 | ID68), data = psid_ind_1979_1999)
+screenreg(list(multi_level, mod_mixe1), digits = 2, 
+          custom.model.names = c("Multi level model", "Mixed Q7"))
+```
+On a des résultats très proches du modèle de la question 7. Ce qui change c'est la décomposition de la variance. 
+
+# Question 11 
+
+*Décomposition de la variance* : 
+Dans le modèle de la question 10, on trouve que la variance individuelle capte 43 % de la variance, la variance résiduelle 44 % et la variance des effets familiaux environ 13 %. 
+
+# Question 12 
+
+*Interprétation* : 
+La 43 % des effets liés au revenu sont dû au caractéristique des individus et 13 % au caractéristiques familliales. 
