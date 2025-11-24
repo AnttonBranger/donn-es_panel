@@ -106,3 +106,4 @@ Dans le modèle de la question 10, on trouve que la variance individuelle capte 
 
 *Interprétation* : 
 La 43 % des effets liés au revenu sont dû au caractéristique des individus et 13 % au caractéristiques familliales. 
+La variance résiduelle explique les chocs transitoires donc il y a des variations dans le temps comme le chômage, les congés, les promotions. 
