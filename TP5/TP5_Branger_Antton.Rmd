@@ -1,0 +1,130 @@
+---
+title: "TP5"
+author: "Branger Antton"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Chargement des packages
+```{r}
+library(tidyverse)
+library(haven)
+```
+
+# Question 2 
+
+```{r}
+data <- read_dta("CardKrueger3.dta")
+```
+
+a)
+Il y a 410 observations au total. 
+```{r}
+data %>% filter(state == 1) %>% nrow()
+```
+Il y a 331 observations pour le New-Jersey 
+
+```{r}
+data %>% filter(state == 2) %>% nrow()
+```
+Il y a 79 observations pour la Pennsylvanie. 
+
+b) 
+```{r}
+table(data$state, data$chain)
+```
+
+# Question 3 
+
+a) pour la période 1
+```{r}
+t.test(data$empfte~data$state)
+t.test(data$empft_rate~data$state)
+t.test(data$wage_min~data$state)
+t.test(data$wage_st~data$state)
+t.test(data$meals~data$state)
+t.test(data$hrsopen~data$state)
+```
+Significatifs que pour le prix des repas et pour l'équivalent temps plein
+
+b) période 2
+```{r}
+t.test(data$empfte2~data$state)
+t.test(data$empft_rate2~data$state)
+t.test(data$wage_minpa2~data$state)
+t.test(data$wage_st2~data$state)
+t.test(data$meals2~data$state)
+t.test(data$hrsopen2~data$state)
+```
+Significatif seulement pour la variable meals
+
+# Question 4 
+
+
+# Quesion 5 
+
+```{r}
+data <- data %>% 
+  mutate(diff_empfte = empfte2 - empfte)
+```
+
+# Question 6 
+
+```{r}
+data %>% 
+  group_by(state) %>% 
+  summarise(avg = mean(diff_empfte, na.rm = T))
+```
+La différence mesure la différence entre les deux période de l'équivalent temps plein de l'emploi. On voit que dans le New Jersey l'emploi en équivalent temps plein a augmenté alors qu'en Pennsylvanie il a baissé fortement. 
+
+```{r}
+t.test(data$diff_empfte ~ data$state)
+```
+La variable de différence est significative au seuil de 5 %. 
+
+# Question 7 
+
+```{r}
+data <- data %>% 
+  mutate(dummy = ifelse(state == "1", 1, 0))
+```
+
+# Question 8 
+```{r}
+OLS <- lm(diff_empfte ~ dummy, data = data)
+summary(OLS)
+```
+Il y a une différence de 2.74 entre les deux états entre les deux périodes. Ce la correspond à l'estimateur de diff-in-diff. Il est significatif au seuil de 5 %
+
+# Question 9 
+
+```{r}
+OLS2 <- lm(diff_empfte ~ dummy + factor(chain) + co_owned, data = data)
+summary(OLS2)
+```
+Le coefficient augmente très légèrement et il est toujours significatif au seuil de 5 %. 
+On inclue des contrôle parce qu'il y a plus de magasin dans le new jersey, on les inclue donc pour éviter les caractéristiques propres aux entreprises et non à l'état d'appartenance. 
+
+# Question 10
+
+```{r}
+data <- data %>% 
+  mutate(diff_hrs = hrsopen2 - hrsopen)
+OLS3 <- lm(diff_hrs ~ dummy, data = data)
+summary(OLS3)
+```
+Cela n'a aucun effets sur les heures d'ouverture. 
+
+# Question 11
+
+```{r}
+data <- data %>% 
+  mutate(diff_price = pmeal2 - pmeal)
+OLS3 <- lm(diff_price ~ dummy, data = data)
+summary(OLS3)
+```
+Cela a en revanche un effet sur le prix des plats. Ce sont donc les consommateurs qui voient leurs pouvoirs d'achat diminué. 
